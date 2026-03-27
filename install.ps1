@@ -44,7 +44,7 @@ function Install-Ask {
 
     # 3. Create batch wrapper
     Write-Host "[3/5] Creating ask command..." -ForegroundColor Cyan
-    $batContent = "@python `"%$userProfile%\ask.py`" %*"
+    $batContent = '@python "%USERPROFILE%\ask.py" %*'
     Set-Content -Path $askBat -Value $batContent -Encoding ASCII
     Write-Host "[OK] Created" -ForegroundColor Green
 
