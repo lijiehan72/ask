@@ -13,27 +13,30 @@ chmod +x /usr/local/bin/ask
 
 ### Windows PowerShell
 
+**方法 1：直接使用（推荐）**
+
 ```powershell
-# 1. 下载 Python 脚本
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lijiehan72/ask/master/ask" -OutFile "$env:USERPROFILE\ask.py"
+# 下载脚本（保存为 ask 无扩展名）
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lijiehan72/ask/master/ask" -OutFile "$env:USERPROFILE\ask"
 
-# 2. 确保已安装 Python，然后在 PowerShell 中运行
+# 运行
+& $env:USERPROFILE\ask -y "查看当前目录"
+```
+
+**方法 2：添加到 PATH（永久生效）**
+
+```powershell
+# 1. 确保 Python 已安装并添加到 PATH
+# 2. 下载脚本到 PATH 目录
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lijiehan72/ask/master/ask" -OutFile "$env:USERPROFILE\AppData\Local\Programs\Python\Python*\ask.exe"
+
+# 3. 或者使用 .py 扩展名并运行
 python $env:USERPROFILE\ask.py -y "查看当前目录"
-
-# 或者添加到 PATH 后直接运行 ask
 ```
 
 ## 首次配置
 
-首次运行会创建配置文件。
-
-### Linux/macOS
-
-```bash
-nano ~/.ask_setting.json
-```
-
-### Windows
+配置文件位置：`$env:USERPROFILE\.ask_setting.json`
 
 ```powershell
 notepad $env:USERPROFILE\.ask_setting.json
@@ -61,16 +64,8 @@ ask -y 安装git
 # 查看历史
 ask --history
 
-# 修复错误（把错误信息包含在问题中）
-ask docker: permission denied 怎么解决
-```
-
-## 多步骤命令
-
-AI 会返回多行命令，自动依次执行：
-
-```bash
-ask -y 安装nginx并启动
+# 更新 ask
+ask --update
 ```
 
 ## 配置说明
@@ -86,9 +81,7 @@ ask -y 安装nginx并启动
 ⚠️ **重要限制**：
 
 - ask 读取的是 shell 历史文件，只保存**命令**，不保存命令输出
-- 如果需要修复错误，**需要把错误信息包含在问题中**，例如：
-  - `ask curl: (35) connection reset 怎么解决`
-  - `ask apt: permission denied 如何处理`
+- 如果需要修复错误，**需要把错误信息包含在问题中**
 
 ## License
 
