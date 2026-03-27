@@ -255,6 +255,34 @@ class AskAssistant:
         except Exception as e:
             return False, "", str(e)
 
+    def _parse_commands(self, answer: str) -> list:
+        """解析多行命令"""
+        if not answer.strip():
+            return []
+
+        # 按换行分割
+        lines = answer.strip().split("\n")
+        commands = []
+
+        for line in lines:
+            line = line.strip()
+            # 跳过空行和注释
+            if not line or line.startswith("#"):
+                continue
+            # 移除行首的编号如 "1." 或 "-"
+            import re
+            line = re.sub(r'^[\d]+\.\s*', '', line)
+            line = re.sub(r'^-\s*', '', line)
+            commands.append(line)
+
+        # 如果只有一个命令，可能用 && 或 ; 分隔
+        if len(commands) == 1:
+            cmd = commands[0]
+            if " && " in cmd:
+                commands = [c.strip() for c in cmd.split(" && ")]
+
+        return commands
+
     def confirm(self, command: str) -> bool:
         """确认是否执行"""
         print(f"\n{'='*50}")
@@ -283,13 +311,49 @@ class AskAssistant:
             print(f"\n{answer[12:]}")
             return
 
+        # 解析多行命令
+        commands = self._parse_commands(answer)
+        if not commands:
+            print("无法解析命令")
+            return
+
+        # 显示待执行的命令
+        print(f"\n将执行 {len(commands)} 个步骤:")
+        for i, cmd in enumerate(commands, 1):
+            print(f"  {i}. {cmd}")
+        print()
+
         # 确认执行
         if auto_confirm or self.confirm(answer):
-            print("\n执行中...")
-            success, output, error = self.execute(answer)
+            print("执行中...\n")
+            all_success = True
 
-            # 记录结果（只有有效命令才记录）
-            if answer.strip():
+            # 依次执行每个命令
+            for i, cmd in enumerate(commands, 1):
+                print(f"=== 步骤 {i}/{len(commands)} ===")
+                print(f"$ {cmd}")
+                success, output, error = self.execute(cmd)
+
+                print(f"结果: {'✓ 成功' if success else '✗ 失败'}")
+                if output:
+                    print(output[:500])
+                if error:
+                    print(f"错误: {error[:200]}")
+
+                # 记录结果
+                self._add_record(cmd, output, success, error)
+
+                # 如果失败，询问是否继续
+                if not success:
+                    print("\n命令执行失败，是否继续执行剩余命令? [y/N]")
+                    ans = input("> ").strip().lower()
+                    if ans not in ('y', 'yes'):
+                        print("已停止")
+                        break
+                    all_success = False
+                print()
+
+            print(f"\n{'全部完成' if all_success else '已终止'}")
                 self._add_record(answer, output, success, error)
 
             # 显示输出
