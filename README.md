@@ -13,23 +13,23 @@ chmod +x /usr/local/bin/ask
 
 ### Windows PowerShell
 
-复制以下命令到 PowerShell 中执行：
+```powershell
+# 方法1：一键安装（推荐）
+# 下载安装脚本并执行
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lijiehan72/ask/master/install.ps1" -OutFile "$env:TEMP\install-ask.ps1"
+powershell -ExecutionPolicy Bypass -File "$env:TEMP\install-ask.ps1"
+
+# 方法2：手动安装
+# 1. 下载安装脚本
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lijiehan72/ask/master/install.ps1" -OutFile ".\install-ask.ps1"
+
+# 2. 右键点击 install.ps1，选择"使用 PowerShell 运行"
+# 或在 PowerShell 中执行: .\install-ask.ps1
+```
+
+安装完成后**重启 PowerShell**，然后直接使用：
 
 ```powershell
-# 一键安装
-# 1. 创建 ask.bat 包装脚本
-$batContent = '@python "%USERPROFILE%\ask.py" %*'
-Set-Content -Path "$env:USERPROFILE\ask.bat" -Value $batContent -Encoding ASCII
-
-# 2. 下载主脚本
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lijiehan72/ask/master/ask" -OutFile "$env:USERPROFILE\ask.py"
-
-# 3. 添加到 PATH
-$oldPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-$newPath = "$oldPath;$env:USERPROFILE"
-[Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
-
-# 4. 重启 PowerShell 后使用
 ask -y "查看当前目录"
 ```
 
