@@ -68,8 +68,6 @@ function Install-Ask {
         }
     }
     Write-Host "`n=== Install Complete ===" -ForegroundColor Cyan
-    Write-Host "Testing ask command..."
-    & "$askBat" --version 2>&1 | ForEach-Object { Write-Host $_ }
 }
 
 function Uninstall-Ask {
