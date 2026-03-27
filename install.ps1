@@ -18,10 +18,8 @@ function Add-ToPath {
         Write-Host "PATH already configured." -ForegroundColor Green
     }
 
-    # Also add to current session
-    if ($env:PATH -notlike "*$userProfile*") {
-        $env:PATH = "$env:PATH;$userProfile"
-    }
+    # Update current session PATH immediately without condition check
+    $env:PATH = "$env:PATH;$userProfile"
 }
 
 function Install-Ask {
