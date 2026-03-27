@@ -5,8 +5,29 @@ $askBat = "$userProfile\ask.bat"
 $askBak = "$userProfile\ask.bak"
 $configFile = "$userProfile\.ask_setting.json"
 
+function Add-ToPath {
+    # Get current user PATH
+    $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+
+    # Check if userProfile already in PATH
+    if ($userPath -notlike "*$userProfile*") {
+        $newPath = "$userPath;$userProfile"
+        [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
+        Write-Host "PATH updated. Please restart your terminal." -ForegroundColor Yellow
+    } else {
+        Write-Host "PATH already configured." -ForegroundColor Green
+    }
+
+    # Also add to current session
+    if ($env:PATH -notlike "*$userProfile*") {
+        $env:PATH = "$env:PATH;$userProfile"
+    }
+}
+
 function Install-Ask {
     Write-Host "=== ask Installer ===" -ForegroundColor Cyan
+
+    # Check Python
     try {
         $pythonVersion = python --version 2>&1
         Write-Host "[OK] Python found: $pythonVersion" -ForegroundColor Green
@@ -14,6 +35,8 @@ function Install-Ask {
         Write-Host "[ERROR] Python not found" -ForegroundColor Red
         exit 1
     }
+
+    # Install dependencies
     Write-Host "`n[1/5] Installing dependencies..." -ForegroundColor Cyan
     try {
         python -m pip install requests --quiet
@@ -22,6 +45,8 @@ function Install-Ask {
         Write-Host "[ERROR] Failed to install dependencies" -ForegroundColor Red
         exit 1
     }
+
+    # Download main script
     Write-Host "`n[2/5] Downloading ask..." -ForegroundColor Cyan
     try {
         Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lijiehan72/ask/master/ask" -OutFile $askPy -ErrorAction Stop
@@ -30,27 +55,18 @@ function Install-Ask {
         Write-Host "[ERROR] Download failed" -ForegroundColor Red
         exit 1
     }
+
+    # Create batch wrapper
     Write-Host "[3/5] Creating ask command..." -ForegroundColor Cyan
     $batContent = "@python `"%USERPROFILE%\ask.py`" %*"
     Set-Content -Path $askBat -Value $batContent -Encoding ASCII
     Write-Host "[OK] Created" -ForegroundColor Green
+
+    # Configure PATH
     Write-Host "[4/5] Configuring PATH..." -ForegroundColor Cyan
-    # Force add to current session PATH
-    $pathAdded = $false
-    if ($env:PATH -notlike "*$userProfile*") {
-        $env:PATH = "$env:PATH;$userProfile"
-        $pathAdded = $true
-    }
-    # Also update system PATH for future sessions
-    $currentPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-    if ($currentPath -notlike "*$userProfile*") {
-        [Environment]::SetEnvironmentVariable("PATH", "$currentPath;$userProfile", "User")
-    }
-    if ($pathAdded) {
-        Write-Host "[OK] Added to PATH" -ForegroundColor Green
-    } else {
-        Write-Host "[OK] Already in PATH" -ForegroundColor Green
-    }
+    Add-ToPath
+
+    # Create config
     Write-Host "[5/5] Creating config..." -ForegroundColor Cyan
     $needConfigEdit = $false
     if (-not (Test-Path $configFile)) {
@@ -71,9 +87,11 @@ function Install-Ask {
             Write-Host "[OK] Config already exists" -ForegroundColor Green
         }
     }
+
     Write-Host "`n=== Install Complete ===" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "Run: ask test" -ForegroundColor Green
+    Write-Host "IMPORTANT: Please RESTART your PowerShell terminal" -ForegroundColor Yellow
+    Write-Host "Then run: ask test" -ForegroundColor Green
 }
 
 function Uninstall-Ask {
