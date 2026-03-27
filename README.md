@@ -9,6 +9,7 @@
 - ⚙️ 配置文件位于 `~/.ask_setting.json`，修改立即生效
 - ✅ 执行前确认，回车直接执行
 - 📝 记录每次执行的命令到历史
+- 🔄 支持多步骤命令，一次执行多个命令
 
 ## 快速开始
 
@@ -99,6 +100,34 @@ ask ecoh command not found 怎么解决
 # 聊天（不执行命令）
 ask 你好
 # 返回: NO_COMMAND: 只是打招呼
+```
+
+## 多步骤命令
+
+ask 支持多步骤命令，会依次执行每个步骤。如果某步骤失败，会询问是否继续。
+
+```bash
+# 安装 nginx 并启动
+ask 安装nginx并启动
+# 返回多行命令:
+#   apt update
+#   apt install -y nginx
+#   systemctl start nginx
+
+# 运行效果:
+# === 步骤 1/3 ===
+# $ apt update
+# 结果: ✓ 成功
+#
+# === 步骤 2/3 ===
+# $ apt install -y nginx
+# 结果: ✓ 成功
+#
+# === 步骤 3/3 ===
+# $ systemctl start nginx
+# 结果: ✓ 成功
+#
+# 全部完成
 ```
 
 ## 错误处理场景
