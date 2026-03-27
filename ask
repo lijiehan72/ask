@@ -426,13 +426,67 @@ Shell: {shell}
             print(f"[{status}] {r['time'][:19]} | {r['command'][:50]}")
 
 
-def main():
-    assistant = AskAssistant()
+def uninstall_self():
+    """卸载 ask"""
+    import shutil
 
-    # 解析参数
-    auto_confirm = False
+    script_path = Path(__file__).resolve()
+    config_path = Path.home() / ".ask_setting.json"
+
+    files_to_remove = [
+        script_path,
+        script_path.with_suffix('.bak'),
+        config_path,
+    ]
+
+    print("=== ask 卸载 ===")
+    print(f"将删除以下文件:")
+    for f in files_to_remove:
+        if f.exists():
+            print(f"  - {f}")
+
+    confirm = input("\n确认删除? [y/N]: ").strip().lower()
+    if confirm != 'y':
+        print("已取消")
+        return
+
+    for f in files_to_remove:
+        if f.exists():
+            try:
+                if f.is_file():
+                    f.unlink()
+                elif f.is_dir():
+                    shutil.rmtree(f)
+                print(f"✓ 已删除: {f}")
+            except Exception as e:
+                print(f"✗ 删除失败: {f} - {e}")
+
+    print("\n卸载完成!")
+    print("如需彻底清理，可手动删除 PATH 中的 ask 命令")
+
+
+def main():
     args = sys.argv[1:]
 
+    # 特殊命令
+    if args and args[0] in ("--update", "update"):
+        update_self()
+        return
+
+    if args and args[0] in ("--uninstall", "uninstall"):
+        uninstall_self()
+        return
+
+    if args and args[0] == "--history":
+        assistant = AskAssistant()
+        n = int(args[1]) if len(args) > 1 else 10
+        assistant.show_history(n)
+        return
+
+    # 正常流程
+    assistant = AskAssistant()
+
+    auto_confirm = False
     if "-y" in args:
         auto_confirm = True
         args.remove("-y")
@@ -440,18 +494,15 @@ def main():
     if not args:
         print("用法: ask [-y] <问题>")
         print("      ask --history [数量]  # 查看历史")
+        print("      ask --update           # 更新到最新版本")
+        print("      ask --uninstall       # 卸载 ask")
         print("\n选项:")
         print("  -y    跳过确认，直接执行")
         print("\n示例:")
         print("  ask 如何安装docker?")
-        print("  ask -y 如何安装git?  # 自动执行")
-        print("  ask 上一个命令为什么失败?")
+        print("  ask -y 如何安装git?")
+        print("  ask --uninstall       # 卸载")
         sys.exit(1)
-
-    if args[0] == "--history":
-        n = int(args[1]) if len(args) > 1 else 10
-        assistant.show_history(n)
-        return
 
     question = " ".join(args)
     assistant.run(question, auto_confirm)
