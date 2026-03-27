@@ -17,7 +17,8 @@ function Install-Ask {
     try {
         $pythonVersion = python --version 2>&1
         Write-Host "[OK] Python found: $pythonVersion" -ForegroundColor Green
-    } catch {
+    }
+    catch {
         Write-Host "[ERROR] Python not found. Please install Python first." -ForegroundColor Red
         exit 1
     }
@@ -27,7 +28,8 @@ function Install-Ask {
     try {
         python -m pip install requests --quiet
         Write-Host "[OK] Dependencies installed" -ForegroundColor Green
-    } catch {
+    }
+    catch {
         Write-Host "[ERROR] Failed to install dependencies: $_" -ForegroundColor Red
         exit 1
     }
@@ -37,7 +39,8 @@ function Install-Ask {
     try {
         Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lijiehan72/ask/master/ask" -OutFile $askPy -ErrorAction Stop
         Write-Host "[OK] Downloaded" -ForegroundColor Green
-    } catch {
+    }
+    catch {
         Write-Host "[ERROR] Download failed: $_" -ForegroundColor Red
         exit 1
     }
@@ -55,15 +58,17 @@ function Install-Ask {
         $newPath = "$currentPath;$userProfile"
         [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
         Write-Host "[OK] Added" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "[OK] Already in PATH" -ForegroundColor Green
     }
-    # 更新当前会话的 PATH
+    # Update current session PATH
     $env:PATH = "$env:PATH;$userProfile"
 
-    # 5. Create config (only if not exists)
+    # 5. Create config
     Write-Host "[5/5] Creating config..." -ForegroundColor Cyan
     $needConfigEdit = $false
+
     if (-not (Test-Path $configFile)) {
         $config = @{
             base_url = "https://cloud.infini-ai.com/maas/v1"
@@ -73,17 +78,22 @@ function Install-Ask {
         $config | ConvertTo-Json | Set-Content -Path $configFile -Encoding UTF8
         Write-Host "[OK] Config created: $configFile" -ForegroundColor Green
         $needConfigEdit = $true
-    } else {
-        # 检查是否需要更新
+    }
+    else {
         try {
             $existingConfig = Get-Content $configFile | ConvertFrom-Json
             if ($existingConfig.api_key -eq "YOUR_API_KEY" -or $existingConfig.api_key -eq "") {
                 $needConfigEdit = $true
             }
-        } catch {}
+        }
+        catch {
+            $needConfigEdit = $true
+        }
+
         if ($needConfigEdit) {
             Write-Host "[OK] Config exists, please update API key" -ForegroundColor Yellow
-        } else {
+        }
+        else {
             Write-Host "[OK] Config already exists" -ForegroundColor Green
         }
     }
@@ -91,7 +101,8 @@ function Install-Ask {
     Write-Host "`n=== Install Complete ===" -ForegroundColor Cyan
     if ($needConfigEdit) {
         Write-Host "Please update your API key in config file, then use:" -ForegroundColor White
-    } else {
+    }
+    else {
         Write-Host "You can now use:" -ForegroundColor White
     }
     Write-Host "  ask -y `"pwd`"" -ForegroundColor Green
@@ -129,7 +140,8 @@ function Uninstall-Ask {
         try {
             Remove-Item $f -Force
             Write-Host "[OK] Deleted: $f" -ForegroundColor Green
-        } catch {
+        }
+        catch {
             Write-Host "[ERROR] Failed: $f" -ForegroundColor Red
         }
     }
@@ -141,6 +153,7 @@ function Uninstall-Ask {
 # Run
 if ($Uninstall) {
     Uninstall-Ask
-} else {
+}
+else {
     Install-Ask
 }
