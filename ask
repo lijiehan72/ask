@@ -106,8 +106,14 @@ class AskAssistant:
 
     def _detect_shell(self) -> str:
         """检测当前 shell 环境"""
+        # 优先检查 Windows 环境
+        if os.name == 'nt' or os.environ.get('WINDIR'):
+            # 检查是否是 PowerShell
+            if os.environ.get('PSModulePath') or os.environ.get('PSExecutionPolicyPreference'):
+                return "PowerShell"
+            return "CMD"
+
         shell = os.environ.get("SHELL", "")
-        # 检测更多环境信息
         if "powershell" in shell.lower() or os.environ.get("PSModulePath"):
             return "PowerShell"
         elif "zsh" in shell.lower():
