@@ -34,15 +34,19 @@ function Install-Ask {
     $batContent = "@python `"%USERPROFILE%\ask.py`" %*"
     Set-Content -Path $askBat -Value $batContent -Encoding ASCII
     Write-Host "[OK] Created" -ForegroundColor Green
-    Write-Host "[4/5] Adding to PATH..." -ForegroundColor Cyan
-    # Always add to current session PATH if not present
+    Write-Host "[4/5] Configuring PATH..." -ForegroundColor Cyan
+    # Force add to current session PATH
+    $pathAdded = $false
     if ($env:PATH -notlike "*$userProfile*") {
         $env:PATH = "$env:PATH;$userProfile"
-        # Also update system PATH for future sessions
-        $currentPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-        if ($currentPath -notlike "*$userProfile*") {
-            [Environment]::SetEnvironmentVariable("PATH", "$currentPath;$userProfile", "User")
-        }
+        $pathAdded = $true
+    }
+    # Also update system PATH for future sessions
+    $currentPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+    if ($currentPath -notlike "*$userProfile*") {
+        [Environment]::SetEnvironmentVariable("PATH", "$currentPath;$userProfile", "User")
+    }
+    if ($pathAdded) {
         Write-Host "[OK] Added to PATH" -ForegroundColor Green
     } else {
         Write-Host "[OK] Already in PATH" -ForegroundColor Green
@@ -68,6 +72,8 @@ function Install-Ask {
         }
     }
     Write-Host "`n=== Install Complete ===" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Run: ask test" -ForegroundColor Green
 }
 
 function Uninstall-Ask {
