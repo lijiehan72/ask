@@ -2,7 +2,7 @@ param(
     [switch]$Uninstall
 )
 
-# ask 安装/卸载脚本
+# ask install/uninstall script
 
 $userProfile = $env:USERPROFILE
 $askPy = "$userProfile\ask.py"
@@ -11,67 +11,66 @@ $askBak = "$userProfile\ask.bak"
 $configFile = "$userProfile\.ask_setting.json"
 
 function Install-Ask {
-    Write-Host "=== ask 安装程序 ===" -ForegroundColor Cyan
+    Write-Host "=== ask Installer ===" -ForegroundColor Cyan
 
-    # 检查 Python
+    # Check Python
     try {
         $pythonVersion = python --version 2>&1
-        Write-Host "✓ 检测到 Python: $pythonVersion" -ForegroundColor Green
+        Write-Host "[OK] Python found: $pythonVersion" -ForegroundColor Green
     } catch {
-        Write-Host "✗ 未检测到 Python，请先安装 Python" -ForegroundColor Red
-        Write-Host "  下载地址: https://www.python.org/downloads/" -ForegroundColor Yellow
+        Write-Host "[ERROR] Python not found. Please install Python first." -ForegroundColor Red
         exit 1
     }
 
-    # 1. 下载主脚本
-    Write-Host "`n[1/4] 下载 ask 主脚本..." -ForegroundColor Cyan
+    # 1. Download main script
+    Write-Host "`n[1/4] Downloading ask..." -ForegroundColor Cyan
     try {
         Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lijiehan72/ask/master/ask" -OutFile $askPy -ErrorAction Stop
-        Write-Host "✓ 下载完成" -ForegroundColor Green
+        Write-Host "[OK] Downloaded" -ForegroundColor Green
     } catch {
-        Write-Host "✗ 下载失败: $_" -ForegroundColor Red
+        Write-Host "[ERROR] Download failed: $_" -ForegroundColor Red
         exit 1
     }
 
-    # 2. 创建批处理包装器
-    Write-Host "[2/4] 创建 ask 命令..." -ForegroundColor Cyan
+    # 2. Create batch wrapper
+    Write-Host "[2/4] Creating ask command..." -ForegroundColor Cyan
     $batContent = "@python `"%$userProfile%\ask.py`" %*"
     Set-Content -Path $askBat -Value $batContent -Encoding ASCII
-    Write-Host "✓ 创建完成" -ForegroundColor Green
+    Write-Host "[OK] Created" -ForegroundColor Green
 
-    # 3. 添加到 PATH
-    Write-Host "[3/4] 添加到系统 PATH..." -ForegroundColor Cyan
+    # 3. Add to PATH
+    Write-Host "[3/4] Adding to PATH..." -ForegroundColor Cyan
     $currentPath = [Environment]::GetEnvironmentVariable("PATH", "User")
     if ($currentPath -notlike "*$userProfile*") {
         $newPath = "$currentPath;$userProfile"
         [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
-        Write-Host "✓ 添加成功（需要重启终端生效）" -ForegroundColor Green
+        Write-Host "[OK] Added (restart terminal to take effect)" -ForegroundColor Green
     } else {
-        Write-Host "✓ 已存在 PATH 中" -ForegroundColor Green
+        Write-Host "[OK] Already in PATH" -ForegroundColor Green
     }
 
-    # 4. 创建配置文件
-    Write-Host "[4/4] 创建配置文件..." -ForegroundColor Cyan
+    # 4. Create config
+    Write-Host "[4/4] Creating config..." -ForegroundColor Cyan
     if (-not (Test-Path $configFile)) {
         $config = @{
             base_url = "https://cloud.infini-ai.com/maas/v1"
-            api_key = "你的API密钥"
+            api_key = "YOUR_API_KEY"
             model = "kimi-k2.5"
         }
         $config | ConvertTo-Json | Set-Content -Path $configFile -Encoding UTF8
-        Write-Host "✓ 配置文件已创建: $configFile" -ForegroundColor Green
-        Write-Host "  请编辑配置文件，填入你的 API Key" -ForegroundColor Yellow
+        Write-Host "[OK] Config created: $configFile" -ForegroundColor Green
+        Write-Host "  Please edit and add your API key" -ForegroundColor Yellow
     } else {
-        Write-Host "✓ 配置文件已存在" -ForegroundColor Green
+        Write-Host "[OK] Config already exists" -ForegroundColor Green
     }
 
-    Write-Host "`n=== 安装完成 ===" -ForegroundColor Cyan
-    Write-Host "请重启 PowerShell 后使用以下命令:" -ForegroundColor White
-    Write-Host "  ask -y `"查看当前目录`"" -ForegroundColor Green
+    Write-Host "`n=== Install Complete ===" -ForegroundColor Cyan
+    Write-Host "Restart PowerShell, then use:" -ForegroundColor White
+    Write-Host "  ask -y `"pwd`"" -ForegroundColor Green
 }
 
 function Uninstall-Ask {
-    Write-Host "=== ask 卸载程序 ===" -ForegroundColor Cyan
+    Write-Host "=== ask Uninstaller ===" -ForegroundColor Cyan
 
     $files = @($askPy, $askBat, $askBak, $configFile)
     $filesToDelete = @()
@@ -83,35 +82,35 @@ function Uninstall-Ask {
     }
 
     if ($filesToDelete.Count -eq 0) {
-        Write-Host "未找到 ask 相关文件" -ForegroundColor Yellow
+        Write-Host "No ask files found" -ForegroundColor Yellow
         exit 0
     }
 
-    Write-Host "将删除以下文件:" -ForegroundColor Cyan
+    Write-Host "Will delete:" -ForegroundColor Cyan
     foreach ($f in $filesToDelete) {
         Write-Host "  - $f" -ForegroundColor White
     }
 
-    $confirm = Read-Host "`n确认删除? [y/N]"
+    $confirm = Read-Host "`nConfirm delete? [y/N]"
     if ($confirm -ne "y" -and $confirm -ne "Y") {
-        Write-Host "已取消" -ForegroundColor Yellow
+        Write-Host "Cancelled" -ForegroundColor Yellow
         exit 0
     }
 
     foreach ($f in $filesToDelete) {
         try {
             Remove-Item $f -Force
-            Write-Host "✓ 已删除: $f" -ForegroundColor Green
+            Write-Host "[OK] Deleted: $f" -ForegroundColor Green
         } catch {
-            Write-Host "✗ 删除失败: $f" -ForegroundColor Red
+            Write-Host "[ERROR] Failed: $f" -ForegroundColor Red
         }
     }
 
-    Write-Host "`n=== 卸载完成 ===" -ForegroundColor Cyan
-    Write-Host "如需彻底清理，请手动从 PATH 中移除 $userProfile" -ForegroundColor Yellow
+    Write-Host "`n=== Uninstall Complete ===" -ForegroundColor Cyan
+    Write-Host "To fully clean, remove $userProfile from PATH manually" -ForegroundColor Yellow
 }
 
-# 执行
+# Run
 if ($Uninstall) {
     Uninstall-Ask
 } else {
