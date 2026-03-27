@@ -104,10 +104,29 @@ class AskAssistant:
                 lines.append(f"    错误: {r['error'][:200]}")
         return "\n".join(lines)
 
+    def _detect_shell(self) -> str:
+        """检测当前 shell 环境"""
+        shell = os.environ.get("SHELL", "")
+        # 检测更多环境信息
+        if "powershell" in shell.lower() or os.environ.get("PSModulePath"):
+            return "PowerShell"
+        elif "zsh" in shell.lower():
+            return "zsh"
+        elif "fish" in shell.lower():
+            return "fish"
+        elif "bash" in shell.lower():
+            return "Bash"
+        elif "cmd" in shell.lower():
+            return "CMD"
+        else:
+            return shell if shell else "Bash"
+
     def _build_prompt(self, question: str) -> str:
         """构建 AI 提示词"""
         context = self._get_context()
-        return f"""你是一个Linux命令行助手。
+        shell = self._detect_shell()
+
+        return f"""你是一个{shell}命令行助手。
 
 ## 用户问题
 {question}
@@ -115,10 +134,14 @@ class AskAssistant:
 ## 历史执行记录（参考）
 {context}
 
+## 当前环境
+Shell: {shell}
+
 ## 输出要求（严格遵守）
 只返回一个shell命令，不要任何解释。如果不需要命令，返回：NO_COMMAND:原因
 
 关键规则：
+- 根据当前Shell类型返回对应命令
 - 只返回纯命令，如 "ls -la" 或 "apt install docker"
 - 不要返回包含中文的句子
 - 不要返回解释性文字
@@ -246,9 +269,19 @@ class AskAssistant:
                 text=True,
                 timeout=300
             )
-            success = result.returncode == 0
+
+            # 判断成功：returncode == 0 且 stderr 为空
+            stderr = result.stderr
+            success = result.returncode == 0 and not stderr.strip()
+
             output = result.stdout or result.stderr
-            error = result.stderr if not success else ""
+
+            # 如果有 stderr 但 returncode 是 0，可能是部分成功或警告
+            if stderr.strip() and result.returncode == 0:
+                error = stderr  # 把 stderr 当作警告而不是错误
+            else:
+                error = result.stderr if not success else ""
+
             return success, output, error
         except subprocess.TimeoutExpired:
             return False, "", "命令执行超时"
@@ -354,14 +387,6 @@ class AskAssistant:
                 print()
 
             print(f"\n{'全部完成' if all_success else '已终止'}")
-                self._add_record(answer, output, success, error)
-
-            # 显示输出
-            print(f"\n{'执行成功' if success else '执行失败'}")
-            if output:
-                print(f"\n输出:\n{output[:2000]}")
-            if error:
-                print(f"\n错误:\n{error[:500]}")
         else:
             print("已取消")
 
