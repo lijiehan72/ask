@@ -22,8 +22,18 @@ function Install-Ask {
         exit 1
     }
 
-    # 1. Download main script
-    Write-Host "`n[1/4] Downloading ask..." -ForegroundColor Cyan
+    # Install dependencies
+    Write-Host "`n[1/5] Installing dependencies..." -ForegroundColor Cyan
+    try {
+        python -m pip install requests --quiet
+        Write-Host "[OK] Dependencies installed" -ForegroundColor Green
+    } catch {
+        Write-Host "[ERROR] Failed to install dependencies: $_" -ForegroundColor Red
+        exit 1
+    }
+
+    # 2. Download main script
+    Write-Host "`n[2/5] Downloading ask..." -ForegroundColor Cyan
     try {
         Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lijiehan72/ask/master/ask" -OutFile $askPy -ErrorAction Stop
         Write-Host "[OK] Downloaded" -ForegroundColor Green
@@ -32,14 +42,14 @@ function Install-Ask {
         exit 1
     }
 
-    # 2. Create batch wrapper
-    Write-Host "[2/4] Creating ask command..." -ForegroundColor Cyan
+    # 3. Create batch wrapper
+    Write-Host "[3/5] Creating ask command..." -ForegroundColor Cyan
     $batContent = "@python `"%$userProfile%\ask.py`" %*"
     Set-Content -Path $askBat -Value $batContent -Encoding ASCII
     Write-Host "[OK] Created" -ForegroundColor Green
 
-    # 3. Add to PATH
-    Write-Host "[3/4] Adding to PATH..." -ForegroundColor Cyan
+    # 4. Add to PATH
+    Write-Host "[4/5] Adding to PATH..." -ForegroundColor Cyan
     $currentPath = [Environment]::GetEnvironmentVariable("PATH", "User")
     if ($currentPath -notlike "*$userProfile*") {
         $newPath = "$currentPath;$userProfile"
@@ -49,8 +59,8 @@ function Install-Ask {
         Write-Host "[OK] Already in PATH" -ForegroundColor Green
     }
 
-    # 4. Create config
-    Write-Host "[4/4] Creating config..." -ForegroundColor Cyan
+    # 5. Create config
+    Write-Host "[5/5] Creating config..." -ForegroundColor Cyan
     if (-not (Test-Path $configFile)) {
         $config = @{
             base_url = "https://cloud.infini-ai.com/maas/v1"
