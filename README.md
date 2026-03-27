@@ -13,30 +13,36 @@ chmod +x /usr/local/bin/ask
 
 ### Windows PowerShell
 
-**方法 1：直接使用（推荐）**
-
 ```powershell
-# 下载脚本（保存为 ask 无扩展名）
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lijiehan72/ask/master/ask" -OutFile "$env:USERPROFILE\ask"
+# 一键安装（复制这行到 PowerShell 执行）
+$pyDir = Split-Path -Parent (Get-Command python).Source; Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lijiehan72/ask/master/ask" -OutFile "$pyDir\ask"
 
-# 运行
-& $env:USERPROFILE\ask -y "查看当前目录"
+# 直接使用
+ask -y "查看当前目录"
 ```
 
-**方法 2：添加到 PATH（永久生效）**
+如果上面不行，尝试这个：
 
 ```powershell
-# 1. 确保 Python 已安装并添加到 PATH
-# 2. 下载脚本到 PATH 目录
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lijiehan72/ask/master/ask" -OutFile "$env:USERPROFILE\AppData\Local\Programs\Python\Python*\ask.exe"
+# 方法2：下载到用户目录
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/lijiehan72/ask/master/ask" -OutFile "$env:USERPROFILE\ask.py"
 
-# 3. 或者使用 .py 扩展名并运行
-python $env:USERPROFILE\ask.py -y "查看当前目录"
+# 添加到 PATH（临时，当前会话有效）
+$env:PATH += ";$env:USERPROFILE"
+
+# 使用
+ask.py -y "查看当前目录"
 ```
 
 ## 首次配置
 
-配置文件位置：`$env:USERPROFILE\.ask_setting.json`
+### Linux/macOS
+
+```bash
+nano ~/.ask_setting.json
+```
+
+### Windows
 
 ```powershell
 notepad $env:USERPROFILE\.ask_setting.json
