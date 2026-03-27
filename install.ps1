@@ -54,7 +54,9 @@ function Install-Ask {
     if ($currentPath -notlike "*$userProfile*") {
         $newPath = "$currentPath;$userProfile"
         [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
-        Write-Host "[OK] Added (restart terminal to take effect)" -ForegroundColor Green
+        # 同时更新当前会话的 PATH
+        $env:PATH = "$env:PATH;$userProfile"
+        Write-Host "[OK] Added" -ForegroundColor Green
     } else {
         Write-Host "[OK] Already in PATH" -ForegroundColor Green
     }
