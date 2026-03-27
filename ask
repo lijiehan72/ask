@@ -26,25 +26,45 @@ DEFAULT_SETTINGS = {
 
 def load_settings() -> dict:
     """从 ~/.ask_setting.json 加载配置，如果不存在则创建"""
+    # 尝试多个可能的配置文件位置
+    possible_paths = [
+        Path.home() / ".ask_setting.json",
+        Path(".ask_setting.json"),  # 当前目录
+        Path(os.getcwd()) / ".ask_setting.json",
+    ]
+
+    settings_file = None
+    for p in possible_paths:
+        if p.exists():
+            settings_file = p
+            break
+
     # 如果配置文件不存在，创建它
-    if not SETTINGS_FILE.exists():
-        SETTINGS_FILE.write_text(json.dumps(DEFAULT_SETTINGS, indent=2, ensure_ascii=False))
+    if not settings_file:
+        # 使用第一个可能路径创建
+        settings_file = possible_paths[0]
+        settings_file.parent.mkdir(parents=True, exist_ok=True)
+        settings_file.write_text(json.dumps(DEFAULT_SETTINGS, indent=2, ensure_ascii=False))
         print("=" * 50)
-        print("首次运行，请先配置 ~/.ask_setting.json")
-        print(f"配置文件位置: {SETTINGS_FILE}")
+        print("首次运行，请先配置 .ask_setting.json")
+        print(f"配置文件位置: {settings_file}")
         print("\n配置示例:")
         print(json.dumps(DEFAULT_SETTINGS, indent=2, ensure_ascii=False))
         print("=" * 50)
         return None
 
     try:
-        settings = json.loads(SETTINGS_FILE.read_text())
+        content = settings_file.read_text()
+        settings = json.loads(content)
         # 检查是否配置好了
         if not settings.get("api_key") or settings.get("api_key") == "你的API密钥":
-            print("请先配置 ~/.ask_setting.json 中的 api_key")
+            print(f"配置文件: {settings_file}")
+            print("请先配置 api_key")
             return None
         return settings
-    except:
+    except Exception as e:
+        print(f"配置文件读取失败: {e}")
+        return None
         print("配置文件格式错误")
         return None
 
