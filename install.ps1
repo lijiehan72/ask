@@ -35,15 +35,18 @@ function Install-Ask {
     Set-Content -Path $askBat -Value $batContent -Encoding ASCII
     Write-Host "[OK] Created" -ForegroundColor Green
     Write-Host "[4/5] Adding to PATH..." -ForegroundColor Cyan
-    $currentPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-    if ($currentPath -notlike "*$userProfile*") {
-        $newPath = "$currentPath;$userProfile"
-        [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
-        Write-Host "[OK] Added" -ForegroundColor Green
+    # Always add to current session PATH if not present
+    if ($env:PATH -notlike "*$userProfile*") {
+        $env:PATH = "$env:PATH;$userProfile"
+        # Also update system PATH for future sessions
+        $currentPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+        if ($currentPath -notlike "*$userProfile*") {
+            [Environment]::SetEnvironmentVariable("PATH", "$currentPath;$userProfile", "User")
+        }
+        Write-Host "[OK] Added to PATH" -ForegroundColor Green
     } else {
         Write-Host "[OK] Already in PATH" -ForegroundColor Green
     }
-    $env:PATH = "$env:PATH;$userProfile"
     Write-Host "[5/5] Creating config..." -ForegroundColor Cyan
     $needConfigEdit = $false
     if (-not (Test-Path $configFile)) {
@@ -65,7 +68,8 @@ function Install-Ask {
         }
     }
     Write-Host "`n=== Install Complete ===" -ForegroundColor Cyan
-    Write-Host "  ask -y `"pwd`"" -ForegroundColor Green
+    Write-Host "Testing ask command..."
+    & "$askBat" --version 2>&1 | ForEach-Object { Write-Host $_ }
 }
 
 function Uninstall-Ask {
