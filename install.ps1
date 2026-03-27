@@ -42,7 +42,7 @@ function Install-Ask {
         exit 1
     }
 
-    # 3. Create batch wrapper
+    # 3. Create batch wrapper (always recreate to fix potential issues)
     Write-Host "[3/5] Creating ask command..." -ForegroundColor Cyan
     $batContent = '@python "%USERPROFILE%\ask.py" %*'
     Set-Content -Path $askBat -Value $batContent -Encoding ASCII
@@ -54,15 +54,16 @@ function Install-Ask {
     if ($currentPath -notlike "*$userProfile*") {
         $newPath = "$currentPath;$userProfile"
         [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
-        # 同时更新当前会话的 PATH
-        $env:PATH = "$env:PATH;$userProfile"
         Write-Host "[OK] Added" -ForegroundColor Green
     } else {
         Write-Host "[OK] Already in PATH" -ForegroundColor Green
     }
+    # 更新当前会话的 PATH
+    $env:PATH = "$env:PATH;$userProfile"
 
-    # 5. Create config
+    # 5. Create config (only if not exists)
     Write-Host "[5/5] Creating config..." -ForegroundColor Cyan
+    $needConfigEdit = $false
     if (-not (Test-Path $configFile)) {
         $config = @{
             base_url = "https://cloud.infini-ai.com/maas/v1"
@@ -71,13 +72,28 @@ function Install-Ask {
         }
         $config | ConvertTo-Json | Set-Content -Path $configFile -Encoding UTF8
         Write-Host "[OK] Config created: $configFile" -ForegroundColor Green
-        Write-Host "  Please edit and add your API key" -ForegroundColor Yellow
+        $needConfigEdit = $true
     } else {
-        Write-Host "[OK] Config already exists" -ForegroundColor Green
+        # 检查是否需要更新
+        try {
+            $existingConfig = Get-Content $configFile | ConvertFrom-Json
+            if ($existingConfig.api_key -eq "YOUR_API_KEY" -or $existingConfig.api_key -eq "") {
+                $needConfigEdit = $true
+            }
+        } catch {}
+        if ($needConfigEdit) {
+            Write-Host "[OK] Config exists, please update API key" -ForegroundColor Yellow
+        } else {
+            Write-Host "[OK] Config already exists" -ForegroundColor Green
+        }
     }
 
     Write-Host "`n=== Install Complete ===" -ForegroundColor Cyan
-    Write-Host "Restart PowerShell, then use:" -ForegroundColor White
+    if ($needConfigEdit) {
+        Write-Host "Please update your API key in config file, then use:" -ForegroundColor White
+    } else {
+        Write-Host "You can now use:" -ForegroundColor White
+    }
     Write-Host "  ask -y `"pwd`"" -ForegroundColor Green
 }
 
